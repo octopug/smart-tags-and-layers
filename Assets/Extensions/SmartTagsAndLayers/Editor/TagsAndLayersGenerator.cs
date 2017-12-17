@@ -1,8 +1,9 @@
-﻿using UnityEditor;
-using UnityEngine;
-using System;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using UnityEditor;
+using UnityEngine;
 
 namespace SmartTagsAndLayers
 {
@@ -151,9 +152,10 @@ namespace SmartTagsAndLayers
 			output += "\t\t#region Variables\n";
 			output += "\t\t\n";
 
-			for (int i = 0; i < UnityEditorInternal.InternalEditorUtility.layers.Length; i++)
+			Dictionary<string, string> layers = BuildFormattedValuesDictionary(UnityEditorInternal.InternalEditorUtility.layers);
+			foreach (var layerData in layers)
 			{
-				output += "\t\tpublic static Layer " + Clean(UnityEditorInternal.InternalEditorUtility.layers[i]) + " = new Layer(\"" + UnityEditorInternal.InternalEditorUtility.layers[i] + "\");\n";
+				output += "\t\tpublic static Layer " + layerData.Key + " = new Layer(\"" + layerData.Value + "\");\n";
 			}
 
 			output += "\t\t\n";
@@ -164,9 +166,9 @@ namespace SmartTagsAndLayers
 			output += "\t\tpublic static List<Layer> List = new List<Layer>()\n";
 			output += "\t\t{\n";
 
-			for (int i = 0; i < UnityEditorInternal.InternalEditorUtility.layers.Length; i++)
+			foreach (var varName in layers.Keys)
 			{
-				output += "\t\t\t" + Clean(UnityEditorInternal.InternalEditorUtility.layers[i]) + ",\n";
+				output += "\t\t\t" + varName + ",\n";
 			}
 
 			output += "\t\t};\n";
@@ -211,9 +213,10 @@ namespace SmartTagsAndLayers
 			output += "\t\t#region Variables\n";
 			output += "\t\t\n";
 
-			for (int i = 0; i < UnityEditorInternal.InternalEditorUtility.tags.Length; i++)
+			Dictionary<string, string> tags = BuildFormattedValuesDictionary(UnityEditorInternal.InternalEditorUtility.tags);
+			foreach (var tagData in tags)
 			{
-				output += "\t\tpublic const string " + Clean(UnityEditorInternal.InternalEditorUtility.tags[i]) + " = \"" + UnityEditorInternal.InternalEditorUtility.tags[i] + "\";\n";
+				output += "\t\tpublic const string " + tagData.Key + " = \"" + tagData.Value + "\";\n";
 			}
 
 			output += "\t\t\n";
@@ -224,9 +227,9 @@ namespace SmartTagsAndLayers
 			output += "\t\tpublic static List<string> List = new List<string>()\n";
 			output += "\t\t{\n";
 
-			for (int i = 0; i < UnityEditorInternal.InternalEditorUtility.tags.Length; i++)
+			foreach (var varName in tags.Keys)
 			{
-				output += "\t\t\t" + Clean(UnityEditorInternal.InternalEditorUtility.tags[i]) + ",\n";
+				output += "\t\t\t" + varName + ",\n";
 			}
 
 			output += "\t\t};\n";
@@ -240,31 +243,72 @@ namespace SmartTagsAndLayers
 
 		#endregion
 
-		#region String Extension
+		#region String Helpers
 
-		public static string Clean(string _value)
+		private static string FormatForVariableName(string _value)
 		{
 			string output = "";
 			bool nextUpper = true;
+			bool allowNumber = false;
 
 			for (int i = 0; i < _value.Length; i++)
 			{
 				bool nextUpperBuffer = nextUpper;
 				nextUpper = false;
 
-				if (_value[i] == ' ')
+				char c = _value[i];
+				if (!IsValidCharacterInVariableName(c, allowNumber))
 				{
 					nextUpper = true;
 					continue;
 				}
 
+				allowNumber = true;
+
 				if (nextUpperBuffer)
-					output += Char.ToUpper(_value[i]);
+					output += Char.ToUpper(c);
 				else
-					output += _value[i];
+					output += c;
 			}
 
 			return output;
+		}
+
+		private static bool IsValidCharacterInVariableName(char c, bool allowNumber)
+		{
+			return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (allowNumber && c >= '0' && c <= '9');
+		}
+
+		private static string FormatForValue(string _value)
+		{
+			return _value
+				.Replace("\\", "\\\\") // Replace \ with \\
+				.Replace("\"", "\\\"") // Replace " with \"
+				.Replace("\'", "\\\'"); // Replace ' with \'
+		}
+
+		private static Dictionary<string, string> BuildFormattedValuesDictionary(string[] array)
+		{
+			var dict = new Dictionary<string, string>();
+			for (int i = 0; i < array.Length; i++)
+			{
+				string raw = array[i];
+				string varName = FormatForVariableName(raw);
+				if (string.IsNullOrEmpty(varName))
+				{
+					Debug.LogError("Variable name generated for tag/layer named '" + raw + "' was null or empty! Is it all invalid characters or numbers?");
+					continue;
+				}
+				else if (dict.ContainsKey(varName))
+				{
+					Debug.LogError("Conflict found with tag/layer named '" + raw + "', check files for missing entries!");
+					continue;
+				}
+
+				string value = FormatForValue(raw);
+				dict.Add(varName, value);
+			}
+			return dict;
 		}
 
 		#endregion
