@@ -13,6 +13,6 @@ namespace SmartTagsAndLayers
 
 		public string Name { get { return name; } }
 		public int Mask { get { return LayerMask.GetMask(name); } }
-		public int Get { get { return LayerMask.NameToLayer(name); } }
+		public int Value { get { return LayerMask.NameToLayer(name); } }
 	}
 }
