@@ -12,7 +12,7 @@ SmartTagsAndLayers.Layers.AwesomeName.Mask
 
 Get the index of the layer named "Awesome Name":
 ```C#
-SmartTagsAndLayers.Layers.AwesomeName.Get
+SmartTagsAndLayers.Layers.AwesomeName.Value
 ```
 
 Get the name of the layer named "Awesome Name":
