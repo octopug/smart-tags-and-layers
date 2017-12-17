@@ -2,14 +2,14 @@
 
 namespace SmartTagsAndLayers
 {
-	public class Layer
+	public sealed class Layer
 	{
 		public Layer(string _name)
 		{
 			name = _name;
 		}
 
-		protected string name = "Default";
+		private readonly string name;
 
 		public string Name { get { return name; } }
 		public int Mask { get { return LayerMask.GetMask(name); } }
